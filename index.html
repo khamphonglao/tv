@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy TV Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://vjs.zencdn.net/7.20.3/video-js.css" rel="stylesheet" />
+    <script src="https://vjs.zencdn.net/7.20.3/video.min.js"></script>
+    
+    <style>
+        .video-js {
+            width: 100% !important;
+            height: 100% !important;
+        }
+        /* แต่ง Scrollbar ของรายชื่อช่อง */
+        #channel-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        #channel-list::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+    <header class="bg-gray-800 p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-red-500 flex items-center gap-2">
+                <img src="logo tv.webp" alt="logo" class="h-10 w-auto"> <span class="text-white">Doo TV</span>
+            </h1>
+            <span class="text-sm text-gray-400">ระบบทีวีออนไลน์จำลอง (เวอร์ชัน Grid Layout)</span>
+        </div>
+    </header>
+
+    <main class="container mx-auto flex-1 p-4 flex flex-col lg:flex-row gap-6">
+        
+        <div class="flex-1 bg-black rounded-lg overflow-hidden shadow-lg flex flex-col justify-center">
+            <div class="relative w-full aspect-video">
+                <video 
+                    id="main-player" 
+                    class="video-js vjs-default-skin vjs-big-play-centered" 
+                    controls 
+                    preload="auto"
+                    data-setup='{}'>
+                </video>
+            </div>
+            <div class="p-4 bg-gray-800">
+                <h2 id="current-channel-title" class="text-xl font-semibold">ดาวน์โหลดระบบ...</h2>
+                <p id="current-channel-desc" class="text-gray-400 text-sm mt-1">กำลังเริ่มระบบการฉาย</p>
+            </div>
+        </div>
+
+        <div class="w-full lg:w-96 bg-gray-800 rounded-lg p-4 shadow-lg flex flex-col">
+            <h3 class="text-lg font-bold mb-4 border-b border-gray-700 pb-2 text-red-400">ผังช่องรายการ</h3>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3 overflow-y-auto max-h-[400px] lg:max-h-[500px] pr-1" id="channel-list">
+                </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-center py-4 border-t border-gray-700 mt-6">
+        <p class="text-sm text-gray-500">© 2026 EasyTV. พัฒนาขึ้นเพื่อเป็นโครงสร้างต้นแบบ</p>
+    </footer>
+            
+    <script>
+        // ข้อมูลช่องทีวีพร้อมลิงก์โลโก้ (Logo) แบบรูปภาพจริง
+        const channels = [
+            {
+                id: 1,
+                name: "MONO 29 (Live)",
+                desc: "กำลังรับชมสัญญาณถ่ายทอดสดผ่านไฟล์ .m3u8 (HLS)",
+                logo: "http://s.muanlai.com/images/180/static//live_tv_img/0/0/0/285_large.jpg?t=f15429a0ce", 
+                url: "http://streaming.playhd.la/threstr2/mono29/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xNi8yMDI2IDEyOjE1OjM3IFBNJmhhc2hfdmFsdWU9aFZZN0VmekFBdXVZek13SHlkY0hZZz09JnZhbGlkbWludXRlcz0xMjA=&s=web&u=&b=aHR0cHM6Ly9tdWFubGFpLmNvbS8=&keysec=jt6bIbDCINL3dlYBViLerw&t=1784211337",
+                type: "application/x-mpegURL"
+            },
+            {
+                id: 2,
+                name: "Workpoint TV (Live)",
+                desc: "กำลังรับชมสัญญาณถ่ายทอดสดช่องเวิร์คพอยท์ทีวี",
+                logo: "http://s.muanlai.com/images/180/static//live_tv_img/0/0/0/182_large.jpg?t=160d471e12", 
+                url: "http://streaming.playhd.la/threstr2/workpoint/playlist.m3u8?wmsAuthSign=c2VydmVyX3RpbWU9Ny8xNi8yMDI2IDEyOjEzOjMxIFBNJmhhc2hfdmFsdWU9V05rNzcxUkE4L2p5WWF5SVQrMVhWdz09JnZhbGlkbWludXRlcz0xMjA=&s=web&u=&b=aHR0cHM6Ly9tdWFubGFpLmNvbS8=&keysec=ZO43e2cXvdu4Q0GKBEbg_A&t=1784211211",
+                type: "application/x-mpegURL"
+            }
+        ];
+
+        let myPlayer;
+        const channelListContainer = document.getElementById('channel-list');
+        const currentTitle = document.getElementById('current-channel-title');
+        const currentDesc = document.getElementById('current-channel-desc');
+
+        // ฟังก์ชันแสดงรายชื่อช่องบนหน้าเว็บในรูปแบบ การจัดวางการ์ด Grid
+        function renderChannels() {
+            channelListContainer.innerHTML = '';
+            channels.forEach((channel, index) => {
+                const button = document.createElement('button');
+                // ดีไซน์ใหม่: จัดวางองค์ประกอบในแนวตั้ง (flex-col) และจัดตำแหน่งกึ่งกลาง (items-center text-center)
+                button.className = `flex flex-col items-center justify-between p-3 rounded-lg transition-all border border-transparent shadow-md select-none group ${
+                    index === 0 
+                    ? 'bg-red-600 text-white font-bold border-red-500 scale-[0.98]' 
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-200 hover:scale-[1.02]'
+                }`;
+                
+                // โครงสร้างปุ่มใน Grid: โลโก้อยู่บน ชื่อช่องและหมายเลข CH อยู่ล่าง
+                button.innerHTML = `
+                    <div class="w-full aspect-video bg-white rounded-md p-1 flex items-center justify-center shadow-inner mb-2 overflow-hidden">
+                        <img src="${channel.logo}" alt="${channel.name}" class="max-w-full max-h-full object-contain transition-transform group-hover:scale-105">
+                    </div>
+                    <div class="w-full text-center">
+                        <p class="font-medium text-xs sm:text-sm line-clamp-1 w-full">${channel.name}</p>
+                        <p class="text-[10px] ${index === 0 ? 'text-red-200' : 'text-gray-400'} mt-0.5">CH ${channel.id}</p>
+                    </div>
+                `;
+                
+                button.onclick = () => selectChannel(channel, button);
+                channelListContainer.appendChild(button);
+            });
+        }
+
+        // ฟังก์ชันสำหรับเปลี่ยนช่องทีวีผ่าน Video.js
+        function selectChannel(channel, activeBtn) {
+            if (myPlayer) {
+                myPlayer.src({
+                    src: channel.url,
+                    type: channel.type
+                });
+                
+                myPlayer.play().catch(error => {
+                    console.log("Browser block auto-play with audio:", error);
+                });
+
+                currentTitle.textContent = channel.name;
+                currentDesc.textContent = channel.desc;
+
+                // รีเซ็ตการตั้งค่าคลาสและสไตล์ของปุ่มทั้งหมดใน Grid กลับไปเป็นแบบปกติ
+                const buttons = channelListContainer.querySelectorAll('button');
+                buttons.forEach((btn) => {
+                    btn.className = "flex flex-col items-center justify-between p-3 rounded-lg transition-all border border-transparent shadow-md select-none group bg-gray-700 hover:bg-gray-600 text-gray-200 hover:scale-[1.02]";
+                    const subText = btn.querySelector('div > p:nth-child(2)');
+                    if (subText) subText.className = "text-[10px] text-gray-400 mt-0.5";
+                });
+                
+                // ไฮไลท์ปุ่มใน Grid ที่กำลังถูกเลือกเล่น
+                activeBtn.className = "flex flex-col items-center justify-between p-3 rounded-lg transition-all border border-transparent shadow-md select-none group bg-red-600 text-white font-bold border-red-500 scale-[0.98]";
+                const activeSubText = activeBtn.querySelector('div > p:nth-child(2)');
+                if (activeSubText) activeSubText.className = "text-[10px] text-red-200 mt-0.5";
+            }
+        }
+
+        // เริ่มทำงานเมื่อเปิดหน้าเว็บ
+        window.onload = () => {
+            myPlayer = videojs('main-player', {
+                fluid: true,
+                autoplay: 'muted', 
+                controls: true
+            });
+
+            renderChannels();
+
+            if (channels.length > 0) {
+                myPlayer.ready(() => {
+                    myPlayer.src({
+                        src: channels[0].url,
+                        type: channels[0].type
+                    });
+                    currentTitle.textContent = channels[0].name;
+                    currentDesc.textContent = channels[0].desc;
+                });
+            }
+        };
+    </script>
+</body>
+</html>
